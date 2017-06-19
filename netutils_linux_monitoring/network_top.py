@@ -14,43 +14,46 @@ class NetworkTop(BaseTop):
 
     def __init__(self):
         BaseTop.__init__(self)
+        # model
         self.tops = {
             'irqtop': IrqTop(),
             'softnet_stat_top': SoftnetStatTop(),
             'softirq_top': Softirqs(),
             'link-rate': LinkRateTop(),
         }
+        # controller
         self.parse_options()
+        # model
         self.numa = Numa(devices=self.options.devices,
                          fake=self.options.random)
 
-    def parse(self):
+    def parse(self): # controller or model
         return dict((top_name, _top.parse()) for top_name, _top in self.tops.iteritems())
 
-    def eval(self):
+    def eval(self): # controller
         if all((self.current, self.previous)):
             self.diff = dict((top_name, _top.diff) for top_name, _top in self.tops.iteritems())
 
-    def tick(self):
+    def tick(self): # controller
         self.previous = self.current
         self.current = self.parse()
         for _top in self.tops.itervalues():
             _top.tick()
         self.eval()
 
-    def __repr_dev(self):
+    def __repr_dev(self): # view of link-rate
         top = self.tops.get('link-rate')
         table = make_table(top.make_header(), top.align_map, top.make_rows())
         return wrap_header("Network devices") + str(table)
 
-    def __repr_irq(self):
+    def __repr_irq(self): # view of irqtop
         top = self.tops.get('irqtop')
         output_lines, cpu_count = top.make_rows()
         align_map = top.make_align_map(cpu_count)
         table = make_table(output_lines[0], align_map, output_lines[1:])
         return wrap_header("/proc/interrupts") + str(table)
 
-    def __repr_cpu(self):
+    def __repr_cpu(self): # view
         irqtop = self.tops.get('irqtop')
         softirq_top = self.tops.get('softirq_top')
         softnet_stat_top = self.tops.get('softnet_stat_top')
@@ -71,7 +74,7 @@ class NetworkTop(BaseTop):
         table = make_table(fields, ['l'] + ['r'] * (len(fields) - 1), rows)
         return wrap_header("Load per cpu:") + str(table)
 
-    def __repr_cpu_make_rows(self, irqtop, network_output, softirq_top, softnet_stat_top):
+    def __repr_cpu_make_rows(self, irqtop, network_output, softirq_top, softnet_stat_top): # view
         rows = [
             [
                 wrap("CPU{0}".format(stat.cpu), cpu_color(stat.cpu, self.numa)),
@@ -89,7 +92,7 @@ class NetworkTop(BaseTop):
         ]
         return rows
 
-    def __repr__(self):
+    def __repr__(self): # view
         output = [
             BaseTop.header,
             self.__repr_irq(),
@@ -100,7 +103,7 @@ class NetworkTop(BaseTop):
             del output[0]
         return "\n".join(output)
 
-    def parse_options(self):
+    def parse_options(self): # controller
         """ Tricky way to gather all options in one util without conflicts, parse them and do some logic after parse """
         parser = OptionParser()
         for top in self.tops.itervalues():
