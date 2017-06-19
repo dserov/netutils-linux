@@ -28,14 +28,14 @@ class IrqTop(BaseTop):
         if not self.numa:
             self.numa = Numa(fake=self.options.random)
 
-    def __int(self, line):
+    def __int(self, line): # lib function/model
         return [self.int(item) for item in line.strip().split()]
 
-    def parse(self):
+    def parse(self): # model
         with open(self.options.interrupts_file) as file_fd:
             return [self.__int(line) for line in file_fd.readlines()]
 
-    def eval(self):
+    def eval(self): # model?
         self.diff = deepcopy(self.current)
         for i, line in enumerate(self.diff):
             for j, column in enumerate(line):
@@ -46,11 +46,11 @@ class IrqTop(BaseTop):
                         self.diff[i][j] = column - self.previous[i][j]
         self.diff_total = self.eval_diff_total()
 
-    @staticmethod
+    @staticmethod # model
     def make_align_map(cpu_count):
         return ['r'] * cpu_count + ['l']
 
-    def make_rows(self):
+    def make_rows(self): # model
         cpu_count = 0
         output_lines = list()
         if not self.diff_total:
@@ -66,7 +66,7 @@ class IrqTop(BaseTop):
             output_lines.append(line)
         return output_lines, cpu_count
 
-    def __repr__(self):
+    def __repr__(self): # view
         output_lines, cpu_count = self.make_rows()
         align_map = self.make_align_map(cpu_count)
         output_lines.insert(1, [colorize(irq, self.irq_warning, self.irq_error) for irq in self.diff_total] + ['TOTAL'])
@@ -74,19 +74,19 @@ class IrqTop(BaseTop):
         table = make_table(output_lines[0], align_map, output_lines[1:])
         return self.__repr_table__(table)
 
-    def eval_diff_total_column(self, column, cpucount):
+    def eval_diff_total_column(self, column, cpucount): # model?
         """ returns sum of all interrupts on given CPU """
         return sum(int(row[column]) for row in self.diff if len(row) > cpucount + 1)
 
-    def eval_diff_total(self):
+    def eval_diff_total(self): # model
         """ returns list of interrupts' sums for each cpu """
         cpucount = len(self.diff[0]) - 1
         return [self.eval_diff_total_column(column, cpucount) for column in xrange(1, cpucount + 2)]
 
-    def has_diff(self, row):
+    def has_diff(self, row): # model?
         """ detect if there were interrupts in this tick() on this IRQ """
         return any(x > self.options.delta_small_hide_limit for x in row if isinstance(x, int))
 
-    def skip_zero_line(self, line):
+    def skip_zero_line(self, line): # model/view
         """ returns decision about hide not changed row in __repr__() """
         return self.options.delta_small_hide and not self.has_diff(line) and self.options.delta_mode
