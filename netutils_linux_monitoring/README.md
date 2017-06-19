@@ -7,3 +7,5 @@ Here are resting libraries for top-like utils:
 - Softirqs
 
 They all are inherited from BaseTop. NetworkTop also uses other top-like (with slightly modified representation).
+
+CPU/Memory topology is here too.
